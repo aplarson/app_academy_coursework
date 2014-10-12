@@ -9,14 +9,50 @@ class WordChainer
     adjacents = []
     candidates = []
     @dictionary.each do |other_word|
-      word_letters = word.split('')
-      candidate_letters = word.split('')
-      (0...word.length).each do |null_letter|
-      	word_letters.delete_at(null_letter)
-      	candidate_letters.delete_at(null_letter)
-    	adjacents << other_word if (word_letters == candidate_letters)
+    	adjacents << other_word if adjacent_word?(word, other_word)
+    end
+    adjacents
+  end
+
+  def adjacent_word?(word, candidate)
+    return false unless word.length == candidate.length
+    matches = 0
+    i = 0
+    word.each_char do |char| 
+      matches += 1 if char == candidate[i]
+      i += 1
+    end
+    return false unless matches == (word.length - 1)
+    true
+  end
+
+  def run(source, target)
+    @current_words = [source]
+    @all_seen_words = {source => nil}
+    until @current_words.empty? || @all_seen_words.include?(target)
+      explore_current_words
+    end
+    build_path(target)
+  end
+
+  def explore_current_words
+    new_words = []
+    @current_words.each do |word|
+      adjacent_words(word).each do |candidate|
+        unless @all_seen_words.include?(candidate)
+          new_words << candidate
+          @all_seen_words[candidate] = word
+        end
       end
     end
-    adjacents.to_set
+    @current_words = new_words
+  end
+
+  def build_path(target)
+    path = [target]
+    until path.include?(nil)
+      path << @all_seen_words[path[-1]]
+    end
+    path[0...-1].reverse
   end
 end

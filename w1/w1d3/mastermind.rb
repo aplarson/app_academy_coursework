@@ -1,16 +1,15 @@
 class Game
-  
+  def self.start
+    codemaker = get_player("codemaker")
+    codebreaker = get_player("codebreaker")
+    
+    game = Game.new(codemaker, codebreaker)
+    game.play(10)
+  end
+
   def initialize(codemaker, codebreaker)
     @codemaker = codemaker
     @codebreaker = codebreaker
-  end
-  
-  def get_solution(codemaker)
-    @solution = codemaker.solution     
-  end
-  
-  def get_guess(codebreaker)
-    codebreaker.guess
   end
   
   def play(turns)
@@ -25,34 +24,32 @@ class Game
       @codebreaker.get_matches(matches)
     end
   end
+
+  private
+
+  def self.get_player(role)
+    puts "Is #{role} a human or a computer player? (h for human, c for cpu)"
+    choice = gets.chomp
+    if choice == 'h'
+      player = HumanPlayer.new
+    else
+      player = ComputerPlayer.new
+    end
+    player
+  end
+
+  def get_solution(codemaker)
+    @solution = codemaker.solution     
+  end
   
+  def get_guess(codebreaker)
+    codebreaker.guess
+  end
+
   def guessed?(guess)
     guess.exact_matches(@solution) == 4
   end
-  
-  def self.start
-    puts "Is codemaker a human or a computer player? (h for human, c for cpu)"
-    choice = gets.chomp
-    if choice == 'h'
-      codemaker = HumanPlayer.new
-    elsif choice == 'c'
-      codemaker = ComputerPlayer.new
-    end
-      
-    puts "Is codebreaker a human or a computer player? (h for human, c for cpu)"
-    choice = gets.chomp
-    if choice == 'h'
-      codebreaker = HumanPlayer.new
-    elsif choice == 'c'
-      codebreaker = ComputerPlayer.new
-    end
-    
-    game = Game.new(codemaker, codebreaker)
-    game.play(10)
-  end
 end
-
-VALID_COLORS = [:R, :G, :B, :Y, :O, :P]
 
 class HumanPlayer
   def guess
@@ -86,41 +83,29 @@ class ComputerPlayer
 end
 
 class Code
-  def initialize
-    @code = []
-  end
-  
-  def code
-    @code
-  end
-  
-  def code=(code)
+  VALID_COLORS = [:R, :G, :B, :Y, :O, :P]
+
+  attr_accessor :code
+
+  def initialize(code)
     @code = code
   end
   
-  def valid_colors
-    @valid_colors
-  end
-  
   def self.parse(input)
-    input_code = Code.new
-    input_code.code = input.split('').map do |color|
-      color.upcase.to_sym
+    input_code = input.split('').map do |color|
+      peg = color.upcase.to_sym
+      raise "Invalid color" unless VALID_COLORS.include?(peg)
+      peg
     end
-    raise "Invalid code" unless input_code.valid_length? && input_code.valid_colors_code?
-    input_code
+    Code.new(input_code)
   end
   
   def self.random
-    random_code = Code.new
+    random_code = []
     4.times do
-      random_code.code << VALID_COLORS.sample 
+      random_code << VALID_COLORS.sample 
     end  
-    random_code
-  end
-  
-  def valid_colors_peg?(peg)
-    VALID_COLORS.include?(peg)
+    Code.new(random_code)
   end
   
   def valid_length?
@@ -129,7 +114,7 @@ class Code
   
   def valid_colors_code?
     self.code.each do |peg|
-      return false unless valid_colors_peg?(peg)    
+      return false unless VALID_COLORS.include?(peg)    
     end
     true
   end
@@ -147,13 +132,7 @@ class Code
     guess_colors = self.color_frequency
     solution_colors = other_code.color_frequency
     guess_colors.keys.each do |color|
-      if solution_colors.keys.include?(color)
-        if guess_colors[color] < solution_colors[color]
-          matches += guess_colors[color]
-        else
-          matches += solution_colors[color]
-        end
-      end
+      matches += [guess_colors[color], other_code[color]].min
     end
     matches
   end
